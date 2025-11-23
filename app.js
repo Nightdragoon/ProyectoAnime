@@ -1,3 +1,6 @@
+
+
+
 // Importar Express
 const express = require("express");
 
@@ -8,6 +11,24 @@ const app = express();
 app.get("/", (req, res) => {
   res.send("Hola, este es mi primer servidor Node.js 🚀");
 });
+
+//read
+app.get("/obtenerAnimes", (req, res) => {
+  res.send("Hola, este es mi primer servidor Node.js 🚀");
+});
+//cread
+app.post("/crearAnime", (req, res) => {
+  res.send("Hola, este es mi primer servidor Node.js 🚀");
+});
+//update
+app.post("/modificarAnime", (req, res) => {
+  res.send("Hola, este es mi primer servidor Node.js 🚀");
+});
+
+app.get("/eliminarAnime", (req, res) => {
+  res.send("Hola, este es mi primer servidor Node.js 🚀");
+});
+
 
 // Levantar el servidor
 app.listen(3000, () => {
