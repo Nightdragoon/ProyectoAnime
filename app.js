@@ -1,6 +1,8 @@
 // Import the functions you need from the SDKs you need
 const { initializeApp } = require("firebase/app");
-const { getDatabase, ref, set, get } = require("firebase/database");
+const { getDatabase, ref, set, get , remove , update } = require("firebase/database");
+const cors = require("cors");
+
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -30,6 +32,10 @@ const express = require("express");
 // Crear la app
 const app = express();
 
+app.use(cors());
+
+app.use(express.json());
+
 // Ruta básica
 app.get("/", (req, res) => {
   res.send("Hola, este es mi primer servidor Node.js 🚀");
@@ -37,19 +43,27 @@ app.get("/", (req, res) => {
 
 //read
 app.get("/obtenerAnimes", async (req, res) => {
-    try {
-    const animeRef = ref(db, "anime"); // <--- Tu ruta real
-    const snapshot = await get(animeRef);//se espera 
+   try {
+    const animeRef = ref(db, "anime");
+    const snapshot = await get(animeRef);
 
-    if (snapshot.exists()) {
-      res.json(snapshot.val());
-    } else {
-      res.json({ mensaje: "No se encontró la ruta 'anime'" });
+    if (!snapshot.exists()) {
+      return res.json([]);
     }
+
+    const data = snapshot.val();
+
+    // Convertir el objeto en una lista de JSONs
+    const lista = Object.keys(data).map(nombre => ({
+      nombre: nombre,
+      descripcion: data[nombre]
+    }));
+
+    res.json(lista);
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Error al obtener datos de Firebase" });
+    res.status(500).json({ error: "Error al obtener los animes" });
   }
 });
 //cread
@@ -80,38 +94,30 @@ app.post("/crearAnime", async (req, res) => {
 });
 //update
 app.post("/modificarAnime", async (req, res) => {
-  /*
-     Espera:
-     {
-        "nombre": "One Piece",
-        "descripcion": "Actualización del anime"
-     }
-  */
+    const { nombre, descripcion } = req.body;
 
-  const { nombre, descripcion } = req.body;
+    if (!nombre || !descripcion) {
+        return res.status(400).json({ error: "Faltan datos" });
+    }
 
-  if (!nombre || !descripcion) {
-    return res.status(400).json({ error: "Faltan datos" });
-  }
+    try {
+        const animeRef = ref(db, "anime/" + nombre);
 
-  try {
-    const animeRef = ref(db, "anime/" + nombre);
+        await set(animeRef, descripcion); // <-- reemplaza correctamente
 
-    await update(animeRef, descripcion);
+        res.json({
+            mensaje: "Anime actualizado",
+            nombre,
+            descripcion
+        });
 
-    res.json({
-      mensaje: "Anime actualizado",
-      nombre,
-      descripcion
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al actualizar anime" });
-  }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Error al actualizar anime" });
+    }
 });
 
-app.get("/eliminarAnime", async (req, res) => {
+app.post("/eliminarAnime", async (req, res) => {
   /*
      Espera:
      {
@@ -133,6 +139,32 @@ app.get("/eliminarAnime", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Error al eliminar anime" });
+  }
+});
+
+app.get("/buscarAnime", async (req, res) => {
+  try {
+    const { nombre } = req.query;
+
+    if (!nombre) {
+      return res.status(400).json({ error: "Debes enviar el nombre en la query ?nombre=" });
+    }
+
+    const animeRef = ref(db, "anime/" + nombre);
+    const snapshot = await get(animeRef);
+
+    if (!snapshot.exists()) {
+      return res.status(404).json({ mensaje: "Anime no encontrado" });
+    }
+
+    res.json({
+      nombre: nombre,
+      descripcion: snapshot.val()
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al buscar el anime" });
   }
 });
 
